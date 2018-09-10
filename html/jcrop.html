@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="../layui/css/layui.css">
+    <link rel="stylesheet" href="../css/jquery.Jcrop.min.css">
+    <link rel="stylesheet" href="../css/jcrop.css">
+    <title>Document</title>
+</head>
+<body>
+    <p style="padding:30px;">
+        写在前面：<br/>
+        使用了<a href="http://deepliquid.com/content/Jcrop.html">jcrop</a><br/>
+        为了美观所以使用了<a href="https://www.layui.com/">layui</a><br/>
+        因为步骤稍微有些复杂 ， 需要配合ui库或者自己的弹窗组件，建议在使用时自行修改以及封装，有用的东西为jcrop.css和两次弹窗的content文本<br/>
+    </p>
+    <button id="btn" class="layui-btn layui-btn-normal">上传</button>
+    
+</body>
+<script src="../layui/layui.js"></script>
+<script src="../js/jquery.js"></script>
+<script src="../js/jquery.Jcrop.min.js"></script>
+<script>
+    layui.use('layer', function(){
+        var layer = layui.layer;
+        $('#btn').click(function(){
+            // img的宽高 以及大小（MB）
+            var imgW = 700,
+                imgH = 400,
+                size = 2;
+            var proportion = imgW/imgH; // 比例 宽高比
+            var index = layer.open({
+                type: 1,
+                title:'设置资讯图片',
+                area: ['900px', 'auto'], //宽高
+                content: '<div class="modal-body"><form id="aticel-picture-form" class="form-horizontal" method="post" enctype="multipart/form-data" action="/admin/article/show/upload"><div class="form-group"><div class="col-md-2 control-label"></div><div class="controls col-md-8 controls"><p class="help-block">请上传jpg, gif, png格式的图片，建议图片尺寸为 '+imgW+'×'+imgH+'px，建议图片大小不超过'+size+'MB。</p></div></div><div class="form-group"><div class="col-md-2 control-label"></div><div class="controls col-md-8 controls"><a style="color:#1b9fe2;" id="article-upload-btn" data-goto-url="/admin/article/picture/crop" data-upload-token="" class="webuploader-container" data-widget-cid="widget-12"><div class="webuploader-pick">选择上传的文件</div><div id="rt_rt_1cn0hv4hagfu1cev1s9oq6e1nnmm" style="position: absolute; top: -20px; left: 0px; width: 562px; height: 20px; overflow: hidden; bottom: auto; right: auto;"><label style="opacity: 0; width: 100%; height: 100%; display: block; cursor: pointer; background: rgb(255, 255, 255);"><input type="file" name="file" id="webuploader-element-invisible" class="webuploader-element-invisible" accept="image/png,image/jpg,image/jpeg,imge/bmp,image/gif"></label></div></a><input type="hidden" name="_csrf_token" value="PphxhHtTPfHtlAzt8Ftn8t8bFmJiIRq_noWsG_9gDC8"></div></div></form></div>',
+                btn:['取消'],
+                yes: function(index, layero){
+                    layer.close(index);
+                },
+                isOutAnim: false
+            });
+            // input file 改变时先关闭页面层再打开一个
+            $('#webuploader-element-invisible').change(function(){
+                layer.close(index);
+                layer.open({
+                    type: 1,
+                    anim:false,
+                    title:'设置资讯图片',
+                    area: ['900px', '500px'], //宽高
+                    content:'<div class="controls" style="padding:20px 0;"><div><img id="element_img"></div><div class="help-block">提示：请选择图片裁剪区域。</div><div><button class="layui-btn layui-btn-normal" id="save">保存</button></div></div>',
+                    btn:['取消'],
+                });
+                // 获取图片地址
+                var file = this.files[0];
+                if (window.FileReader) {    
+                    var reader = new FileReader();
+                    reader.readAsDataURL(file);    
+                    //监听文件读取结束后事件    
+                    reader.onloadend = function (e) {
+                        //e.target.result就是最后的路径地址
+                        $('#element_img').attr('src',e.target.result);
+                        // 等待图片加载完成
+                        $('#element_img')[0].onload = function(){
+                            // 获取图片宽高
+                            var imgRealWidth = $('#element_img').width();
+                            var imgRealHeight = $('#element_img').height();
+                            var r;
+                            var type;
+                            if((imgRealWidth/imgRealHeight)>=(570/270)){
+                                // 比例大于正常比例 也就是宽度比较宽
+                                r = imgRealWidth/270;
+                                type = 'w',
+                                $('#element_img').css({
+                                    'width':570+'px',
+                                    'height':parseInt(imgRealHeight/(imgRealWidth/270))+'px'
+                                })
+                            }else{
+                                // 比例小于正常比例 也就是高度比较大
+                                r = imgRealHeight/270;
+                                type = 'h'
+                                $('#element_img').css({
+                                    'width':parseInt(imgRealWidth/(imgRealHeight/270))+'px',
+                                    'height':270+'px'
+                                })
+                            };
+                            var jcropApi;
+                            $('#element_img').Jcrop({
+                                aspectRatio:imgW/imgH,
+                                allowSelect:false
+                            }, function() {
+                                jcropApi = this;
+                            });
+                            if(type=='w'){
+                                var h = parseInt(imgRealHeight/(imgRealWidth/270));
+                                var w = h*(570/270);
+                                jcropApi.setSelect([0, 0, w, h]);
+                            }else{
+                                var w = parseInt(imgRealWidth/(imgRealHeight/270));
+                                var h = w/(570/270);
+                                jcropApi.setSelect([0, 0, w, h]);
+                            }
+                            $('#save').click(function(){
+                                var newObj = jcropApi.tellScaled();
+                                for(var i in newObj){
+                                    newObj[i] = newObj[i]*r;
+                                }
+                                // 第一个是图片的base64 ， 第二个是 计算后的 截图范围 r为比例无用处 配合后端完成裁剪
+                                console.log($('#element_img').attr('src'));
+                                console.log(newObj,r);
+                            })
+                        }
+                    };
+                }else{
+                    layer.msg('您的浏览器暂不支持裁剪上传，请升级到高级浏览器');
+                }
+            })
+        })
+    });  
+    
+</script>
+</html>

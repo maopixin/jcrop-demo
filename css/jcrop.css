@@ -1,0 +1,32 @@
+.modal-body {
+    position: relative;
+    padding: 20px;
+}
+.form-horizontal .form-group {
+    margin-right: -15px;
+    margin-left: -15px;
+}
+.form-group {
+    margin-bottom: 15px;
+}
+.controls{
+    width: 590px;
+    margin: 0 auto;
+}
+.webuploader-container {
+    position: relative;
+}
+input[type=file] {
+    display: block;
+}
+.webuploader-element-invisible {
+    position: absolute!important;
+    clip: rect(1px 1px 1px 1px);
+    clip: rect(1px,1px,1px,1px);
+}
+.help-block {
+    display: block;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    color: #737373;
+}
